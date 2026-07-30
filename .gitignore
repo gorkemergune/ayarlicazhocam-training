@@ -15,3 +15,5 @@ env/
 *.swp
 
 mmlu_test.py
+outputs/
+unsloth_compiled_cache/

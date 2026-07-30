@@ -33,11 +33,13 @@ The dataset includes both **Turkish** and **English** conversational examples.
 
 ### Model
 
-* `gorkemergune/ayarlicazhocam-llama-3.2-3b`
+* **v2 (current):** `gorkemergune/ayarlicazhocam-gemma-4-e4b` — QLoRA adapter on `google/gemma-4-E4B-it` (thinking + tool-calling)
+* v1: `gorkemergune/ayarlicazhocam-llama-3.2-3b` *(retired; mismatched-template experiment)*
 
 ### Dataset
 
-* `gorkemergune/ayarlicazhocam_finetune`
+* **v2 (current):** `gorkemergune/ayarlicazhocam_finetune_v2` — persona + ~20% thinking + tool-calling
+* v1: `gorkemergune/ayarlicazhocam_finetune`
 
 ## Tech Stack
 
@@ -56,10 +58,16 @@ As a research and learning project, an equally important goal is to **understand
 
 ## Status & Findings
 
-This is an active first-iteration experiment. Key findings so far (full details in [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md)):
+### v2 (Gemma 4 E4B) — current
 
-* The first published adapter was trained with a **mismatched chat template** (Gemma-3 format on a Llama tokenizer), which weakened instruction-following and left persona facts poorly learned.
-* On the Turkish MMLU benchmark the model currently scores around the random baseline, and it tends to **hallucinate** identity answers not present in the dataset.
-* The training notebook has since been corrected to use the proper `llama-3.1` template; retraining and re-evaluation are the next steps.
+Full analysis in [`BENCHMARK_REPORT_V2.md`](BENCHMARK_REPORT_V2.md). Pipeline: `src/phase*.py`.
 
-These results are expected for a first fine-tuning attempt and are kept in the repo as part of the research record.
+* **Fixed v1's root cause.** Chat template is always taken from the model's own `AutoProcessor`. Caught (via a mandatory round-trip test) that Gemma 4 *silently drops* a `thinking` field — the correct field is `reasoning`.
+* **Identity learned & consistent** — "Görkem Ergüne → Yeditepe Bilgisayar Mühendisliği…" (v1 hallucinated a different fake bio each run).
+* **Thinking** preserved (native on/off), **tool-calling** learned: **17% → 92%** correct-tool rate on a held-out 12-scenario set (incl. an unseen tool).
+* **Honest trade-off:** mihenk-benchmark regressed **75% → 67.5%**, concentrated in terse short-answer (much of it verbosity, not lost reasoning; MC only −2.5).
+* Trained locally on an RTX 5070 (12 GB): text-only 4-bit QLoRA, multimodal towers + elastic per-layer-embeddings offloaded to CPU, peak 9.8 GB.
+
+### v1 (Llama-3.2-3B) — retired
+
+* Trained with a **mismatched chat template** (Gemma-3 format on a Llama tokenizer) → weak instruction-following, hallucinated identity, ~random-baseline MMLU. Kept as a research record ([`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md)).
